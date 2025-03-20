@@ -135,6 +135,33 @@ export const App: React.FC = () => {
       .finally(() => setIsLoading(prev => prev.filter(id => id !== todoId)));
   };
 
+  const toggleAllToCompleted = () => {
+    todos.forEach(todo => {
+      setIsLoading(prev => [...prev, todo.id]);
+      patchTodoCompleteness(todo.id, {
+        ...todo,
+        completed: !todo.completed,
+      })
+        .then(() => {
+          const changedTodos = todos;
+          const changeTodoStatus = () => {
+            changedTodos.map(task => {
+              if (task.id === todo.id) {
+                // eslint-disable-next-line no-param-reassign
+                task.completed = !task.completed;
+              }
+            });
+          };
+
+          changeTodoStatus();
+
+          setTodos(changedTodos);
+        })
+        .catch(() => setErrorType(ERROR.unableToUpdate))
+        .finally(() => setIsLoading(prev => prev.filter(id => id !== todo.id)));
+    });
+  };
+
   if (!USER_ID) {
     return <UserWarning />;
   }
@@ -145,6 +172,8 @@ export const App: React.FC = () => {
 
       <div className="todoapp__content">
         <Header
+          isLoading={isLoading}
+          toggleAllToCompleted={toggleAllToCompleted}
           tempTodo={tempTodo}
           handleSubmit={handleSumbit}
           errorType={errorType}
