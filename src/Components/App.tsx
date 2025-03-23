@@ -88,7 +88,8 @@ export const App: React.FC = () => {
       })
       .catch(() => {
         setErrorType(ERROR.unableToDelete);
-      });
+      })
+      .finally(() => setIsLoading(prev => prev.filter(id => id !== todoId)));
   };
 
   const clearCompleted = () => {
@@ -137,28 +138,59 @@ export const App: React.FC = () => {
 
   const toggleAllToCompleted = () => {
     todos.forEach(todo => {
-      setIsLoading(prev => [...prev, todo.id]);
-      patchTodoCompleteness(todo.id, {
-        ...todo,
-        completed: !todo.completed,
-      })
-        .then(() => {
-          const changedTodos = todos;
-          const changeTodoStatus = () => {
-            changedTodos.map(task => {
-              if (task.id === todo.id) {
-                // eslint-disable-next-line no-param-reassign
-                task.completed = !task.completed;
-              }
-            });
-          };
-
-          changeTodoStatus();
-
-          setTodos(changedTodos);
+      if (todo.completed === false) {
+        setIsLoading(prev => [...prev, todo.id]);
+        patchTodoCompleteness(todo.id, {
+          ...todo,
+          completed: true,
         })
-        .catch(() => setErrorType(ERROR.unableToUpdate))
-        .finally(() => setIsLoading(prev => prev.filter(id => id !== todo.id)));
+          .then(() => {
+            const changedTodos = todos;
+            const changeTodoStatus = () => {
+              changedTodos.map(task => {
+                if (task.id === todo.id) {
+                  // eslint-disable-next-line no-param-reassign
+                  task.completed = true;
+                }
+              });
+            };
+
+            changeTodoStatus();
+
+            setTodos(changedTodos);
+          })
+          .catch(() => setErrorType(ERROR.unableToUpdate))
+          .finally(() =>
+            setIsLoading(prev => prev.filter(id => id !== todo.id)),
+          );
+      }
+
+      if (completedTodos.length === todos.length) {
+        setIsLoading(prev => [...prev, todo.id]);
+        patchTodoCompleteness(todo.id, {
+          ...todo,
+          completed: false,
+        })
+          .then(() => {
+            const changedTodos = todos;
+            const changeTodoStatus = () => {
+              changedTodos.map(task => {
+                if (task.id === todo.id) {
+                  // eslint-disable-next-line no-param-reassign
+                  task.completed = false;
+                }
+              });
+            };
+
+            changeTodoStatus();
+
+            setTodos(changedTodos);
+          })
+          .catch(() => setErrorType(ERROR.unableToUpdate))
+          .finally(() =>
+            setIsLoading(prev => prev.filter(id => id !== todo.id)),
+          );
+      }
     });
   };
 
@@ -183,6 +215,8 @@ export const App: React.FC = () => {
         />
         {status === 'resolved' && (
           <Main
+            setErrorType={setErrorType}
+            setIsLoading={setIsLoading}
             toggleCompleted={toggleCompleted}
             isLoading={isLoading}
             handleDeletion={handleDeletion}
